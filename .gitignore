@@ -1,5 +1,6 @@
 .jpg
 *.zip
+!instructions_examples/Datasets/powerpredict.csv.zip
 *.pkl
 *.csv
 __pycache__/
@@ -8,3 +9,4 @@ figures/
 project/models/
 instructions_examples/Datasets/sign_lang_train/
 slides/
+CLAUDE.md
