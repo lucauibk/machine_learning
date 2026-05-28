@@ -5,6 +5,7 @@
 *.csv
 *.log
 *.gz
+*.pdf
 __pycache__/
 .DS_Store
 figures/
