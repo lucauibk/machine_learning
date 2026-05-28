@@ -9,4 +9,4 @@ figures/
 project/models/
 instructions_examples/Datasets/sign_lang_train/
 slides/
-CLAUDE.md
+*.md
