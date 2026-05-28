@@ -10,3 +10,4 @@ project/models/
 instructions_examples/Datasets/sign_lang_train/
 slides/
 *.md
+!README.md
