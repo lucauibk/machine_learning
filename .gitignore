@@ -1,0 +1,10 @@
+.jpg
+*.zip
+*.pkl
+*.csv
+__pycache__/
+.DS_Store
+figures/
+project/models/
+instructions_examples/Datasets/sign_lang_train/
+slides/
