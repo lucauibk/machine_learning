@@ -3,6 +3,8 @@
 !instructions_examples/Datasets/powerpredict.csv.zip
 *.pkl
 *.csv
+*.log
+*.gz
 __pycache__/
 .DS_Store
 figures/
