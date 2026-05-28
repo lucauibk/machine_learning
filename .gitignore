@@ -9,5 +9,5 @@ figures/
 project/models/
 instructions_examples/Datasets/sign_lang_train/
 slides/
-*.md
-!README.md
+ridge_explanation.md
+CLAUDE.md
