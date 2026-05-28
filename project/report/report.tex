@@ -1,63 +1,71 @@
-\documentclass[10pt,twocolumn,a4paper]{article}
-\usepackage[margin=1.8cm]{geometry}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4, 10pt, conference]{ieeeconf}
+
+\IEEEoverridecommandlockouts
+\overrideIEEEmargins
+
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{booktabs}
-\usepackage{hyperref}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
-\title{\large Introduction to Machine Learning (SS 2026)\\[4pt]
-       \Large\bfseries Programming Project}
-\date{}
-
-\author{%
-  \begin{tabular}{|p{0.42\linewidth}|p{0.42\linewidth}|}
-    \hline
-    \textbf{Author 1} & \textbf{Author 2} \\
-    Last name:  \rule{2.2cm}{0.4pt}  & Last name:  \rule{2.2cm}{0.4pt} \\
-    First name: \rule{2.2cm}{0.4pt}  & First name: \rule{2.2cm}{0.4pt} \\
-    Matrikel Nr.: \rule{2cm}{0.4pt} & Matrikel Nr.: \rule{2cm}{0.4pt} \\
-    \hline
-  \end{tabular}
+\title{\LARGE \bf
+Introduction to Machine Learning (SS 2026)\\ Programming Project
+\vspace{-3em}
 }
 
 \begin{document}
-\maketitle
 
-% -------------------------------------------------------
+\maketitle
+\vspace{-3em}
+\thispagestyle{empty}
+\pagestyle{empty}
+
+\begin{center}
+\begin{tabular}{|p{0.42\linewidth}|p{0.42\linewidth}|}
+\hline
+\textbf{Author 1} & \textbf{Author 2} \\
+Last name:  \rule{2.2cm}{0.4pt}  & Last name:  \rule{2.2cm}{0.4pt} \\
+First name: \rule{2.2cm}{0.4pt}  & First name: \rule{2.2cm}{0.4pt} \\
+Matrikel Nr.: \rule{2cm}{0.4pt}  & Matrikel Nr.: \rule{2cm}{0.4pt} \\
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Introduction}
-% -------------------------------------------------------
+\label{sec:intro}
 
 We consider the task of \emph{regression}: predicting the total power consumption (in MW) of a fictional power grid from meteorological observations recorded across five cities (Bedrock, Gotham City, New New York, Paperopoli, and Springfield).
 
 The dataset contains $N = 39{,}997$ instances, each with 65 features. Of these, 55 are numerical (temperature, air pressure, humidity, wind speed, wind direction, precipitation, snow cover, cloud cover per city) and 10 are categorical (weather category and a text description per city). There are no missing values and the data is not split into separate train/test files — we create our own splits. The target variable \texttt{power\_consumption} has mean $28{,}555\,\text{MW}$ and standard deviation $4{,}735\,\text{MW}$, with values ranging from $18{,}041$ to $41{,}015\,\text{MW}$. Its distribution is approximately bell-shaped and slightly right-skewed (see Fig.~\ref{fig:overview}).
 
-% -------------------------------------------------------
 \section{Implementation / ML Process}
-% -------------------------------------------------------
+\label{sec:methods}
 
 \subsection{Data Preprocessing}
 We dropped the ten \texttt{weather\_description} columns because they carry redundant information already encoded in the \texttt{weather\_main} columns (nine unique categories, e.g.\ \texttt{clear}, \texttt{rain}, \texttt{thunderstorm}). The remaining 55 numerical features were standardised to zero mean and unit variance using a \texttt{StandardScaler}. The five \texttt{weather\_main} columns were one-hot encoded (\texttt{OneHotEncoder}), yielding $5 \times 9 = 45$ binary features. The final feature vector has dimension~$100$.
 
-We split the data into 80\% training ($31{,}997$ samples) and 20\% validation ($8{,}000$ samples) using a fixed random seed for reproducibility.
+We split the data into 80\% training ($31{,}997$ samples) and 20\% validation ($8{,}000$ samples) using a fixed random seed (\texttt{random\_state=42}) for reproducibility. The preprocessor was fit exclusively on the training split and then applied to the validation set to prevent data leakage.
 
 \subsection{Method 1: Ridge Regression}
 Ridge regression~\cite{Tikhonov} minimises the $\ell_2$-penalised least-squares objective:
 \begin{equation}
   \hat{w} = \arg\min_w \,\|Xw - y\|^2 + \alpha\|w\|^2,
 \end{equation}
-which corresponds to maximum a-posteriori estimation under a Gaussian prior $p(w) \propto \exp(-\frac{\alpha}{2}\|w\|^2)$ as derived in Lecture~4. The regularisation parameter $\alpha$ controls the bias-variance trade-off.
+which corresponds to maximum a-posteriori estimation under a Gaussian prior $p(w) \propto \exp\!\bigl(-\frac{\alpha}{2}\|w\|^2\bigr)$ as derived in Lecture~4. The regularisation parameter $\alpha$ controls the bias-variance trade-off.
 
-We selected $\alpha$ by evaluating 60 logarithmically spaced values in $[10^{-3}, 10^4]$ on the validation set (see Fig.~\ref{fig:ridge}). We chose this method as a strong linear baseline that is fast to train and interpretable. Ridge is well-suited whenever a linear relationship between features and target is plausible and the number of features is large relative to the number of informative signals, as regularisation prevents weight explosion.
+We selected $\alpha$ by evaluating 60 logarithmically spaced values in $[10^{-3}, 10^4]$ on the validation set (see Fig.~\ref{fig:ridge}). Ridge is a well-motivated linear baseline: it is fast to train, fully interpretable, and prevents weight explosion when the number of features is large relative to the number of truly informative signals.
 
 \subsection{Method 2: MLP Neural Network}
 A multi-layer perceptron (MLP) with ReLU or tanh activations, trained via backpropagation and the Adam optimiser, can capture non-linear interactions between weather variables that linear regression cannot. This is motivated by the visually non-linear scatter of temperature versus power consumption (Fig.~\ref{fig:overview}).
 
-We performed a random search over 30 configurations, varying hidden layer sizes $\in \{(64), (128), (256), (64,32), (128,64), (256,128), (128,64,32)\}$, learning rates $\in \{10^{-4}, 3{\cdot}10^{-4}, 10^{-3}, 3{\cdot}10^{-3}, 10^{-2}\}$, and activation functions $\in \{\text{relu}, \text{tanh}\}$. Each model was trained for 200~epochs. The best configuration was selected based on validation RMSE.
+We performed a random search over 30 configurations, varying hidden layer sizes $\in \{(64), (128), (256), (64,32), (128,64), (256,128), (128,64,32)\}$, learning rates $\in \{10^{-4}, 3{\cdot}10^{-4}, 10^{-3}, 3{\cdot}10^{-3}, 10^{-2}\}$, and activation functions $\in \{\text{relu}, \text{tanh}\}$. Each model was trained for 200~epochs with the Adam optimiser. The best configuration was selected based on validation RMSE.
 
 \subsection{Final Hyperparameters}
-% Fill in actual values after running training.ipynb
 Table~\ref{tab:hyperparams} summarises the chosen hyperparameters.
 
 \begin{table}[h]
@@ -77,9 +85,8 @@ MLP    & Max epochs     & $200$ \\
 \end{tabular}
 \end{table}
 
-% -------------------------------------------------------
 \section{Results}
-% -------------------------------------------------------
+\label{sec:results}
 
 Both methods were evaluated on the held-out validation set using RMSE and $R^2$. Results are shown in Table~\ref{tab:results}. Fig.~\ref{fig:scatter} shows predicted versus actual values on the validation set.
 
@@ -97,25 +104,23 @@ MLP Neural Network & 2741.6 & 3139.3 & 0.664 & 0.564 \\
 \end{tabular}
 \end{table}
 
-% -------------------------------------------------------
 \section{Discussion}
-% -------------------------------------------------------
+\label{sec:discuss}
 
 Both methods achieved reasonable performance on the validation set. The MLP outperformed ridge regression by a clear margin (Val RMSE: $3{,}139$ vs.\ $3{,}950\,\text{MW}$; Val $R^2$: $0.564$ vs.\ $0.310$), confirming that non-linear interactions between weather variables and power consumption are significant.
 
-The hyperparameter search for Ridge Regression (Fig.~\ref{fig:ridge}) shows that the optimal $\alpha = 0.001$ corresponds to nearly no regularisation. Very high values of $\alpha$ produced clear underfitting, while lower values converged to near-ordinary-least-squares behaviour.
+The hyperparameter search for Ridge Regression (Fig.~\ref{fig:ridge}) shows that the optimal $\alpha = 0.001$ corresponds to nearly no regularisation. Very high values of $\alpha$ produce clear underfitting, while lower values converge to near-ordinary-least-squares behaviour.
 
-For the MLP, the best configuration uses a single hidden layer of $256$ neurons with tanh activations and learning rate $0.01$. The training loss curve (Fig.~\ref{fig:mlp_loss}) decreases rapidly in the first $\sim50$ epochs and then converges smoothly. The gap between training $R^2 = 0.664$ and validation $R^2 = 0.564$ suggests mild overfitting, which could be addressed with weight decay or dropout.
+For the MLP, the best configuration uses a single hidden layer of $256$ neurons with tanh activations and learning rate $0.01$. The training loss curve (Fig.~\ref{fig:mlp_loss}) decreases rapidly in the first $\sim50$ epochs and then converges smoothly. The gap between training $R^2 = 0.664$ and validation $R^2 = 0.564$ indicates mild overfitting, which could be reduced with weight decay or dropout.
 
-One approach we considered but discarded was using the \texttt{weather\_description} text columns, as \texttt{weather\_main} already captures the essential information with far fewer features. We also considered k-nearest-neighbour regression, but dismissed it due to the curse of dimensionality in a 100-dimensional space.
+We considered but discarded the \texttt{weather\_description} text columns, as \texttt{weather\_main} already captures the essential information with far fewer features. We also considered k-nearest-neighbour regression, but dismissed it due to the curse of dimensionality in a 100-dimensional space.
 
-To further improve results, temporal features (hour of day, day of week, month) would likely be the most impactful addition, as power demand has strong time-of-day and seasonal patterns not captured by weather alone.
+Temporal features (hour of day, day of week, month) would likely be the most impactful addition, as power demand has strong time-of-day and seasonal patterns not captured by weather alone.
 
-% -------------------------------------------------------
 \section{Conclusion}
-% -------------------------------------------------------
+\label{sec:con}
 
-We applied two different regression methods — Ridge Regression and an MLP Neural Network — to the power consumption prediction task. The preprocessing pipeline (standardisation + one-hot encoding) was shared between both methods to ensure a fair comparison. On the validation set, the MLP achieved RMSE $= 3{,}139\,\text{MW}$ and $R^2 = 0.564$, compared to RMSE $= 3{,}950\,\text{MW}$ and $R^2 = 0.310$ for Ridge Regression. The main takeaway is that the MLP proved substantially more effective, indicating that non-linear interactions between weather features are important for predicting power consumption. The remaining unexplained variance ($R^2 \approx 0.44$) is likely due to the absence of temporal features such as time of day and day of week, which are among the strongest drivers of energy demand.
+We applied two regression methods — Ridge Regression and an MLP Neural Network — to the power consumption prediction task. The MLP achieved a validation RMSE of $3{,}139\,\text{MW}$ and $R^2 = 0.564$, compared to RMSE $= 3{,}950\,\text{MW}$ and $R^2 = 0.310$ for Ridge Regression. The MLP proved substantially more effective, indicating that non-linear interactions between weather features are important for predicting power consumption. The remaining unexplained variance ($R^2 \approx 0.44$) is likely due to the absence of temporal features such as time of day and day of week, which are among the strongest drivers of energy demand. The final model (MLP) is stored in \texttt{models/final\_model.pkl} (0.87\,MB, well below the 50\,MB limit) and loaded at test time without retraining.
 
 \begin{thebibliography}{9}
 \bibitem{Tikhonov}
@@ -123,7 +128,7 @@ We applied two different regression methods — Ridge Regression and an MLP Neur
 \end{thebibliography}
 
 % -------------------------------------------------------
-% FIGURES (placed at end to not break two-column layout)
+% FIGURES
 % -------------------------------------------------------
 
 \begin{figure}[h]
